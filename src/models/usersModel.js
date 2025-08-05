@@ -61,4 +61,33 @@ export default class UsersModel {
 		}
 	}
 
+	static async updateUser(user, id) {
+		const client = await pool.connect();
+		try {
+			await client.query(`
+				UPDATE users SET
+				user_name = $1,
+				user_email = $2
+				WHERE id = $3
+			`, [user.user_name, user.user_email, user.id])
+		} catch (err) {
+			throw err;
+		} finally {
+			await client.release();
+		}
+	}
+
+	static async deleteUser(id) {
+		const client = await pool.connect()
+		try {
+			await client.query(`
+			DELETE FROM users
+			WHERE id = $1
+			`, [id]);
+		} catch (err) {
+			throw err;
+		} finally {
+			await client.release();
+		}
+	}
 }
