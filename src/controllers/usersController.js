@@ -1,10 +1,10 @@
-import UsersModel from "../models/usersModel.js";
+import {User} from "../models/index.js";
 
 export default class UsersController {
 
 	static async getAllUsers(req, res) {
 		try {
-			const usersList = await UsersModel.getAllUsers();
+			const usersList = await User.findAll();
 			return res.status(200).json(usersList);
 		} catch (err) {
 			res.status(500).send({error: err.message});
@@ -15,7 +15,7 @@ export default class UsersController {
 		try {
 			const { id } = req.params;
 
-			const [user] = await UsersModel.getUserById(+id);
+			const user = await User.findByPk(+id);
 
 			if (!user) {
 				res.status(404).send({error: 'User not found'});
@@ -30,17 +30,22 @@ export default class UsersController {
 		try {
 			const { user_name, user_email } = req.body;
 
-			const [candidate] = await UsersModel.getUserByEmail(user_email);
+			const candidate = await User.findOne({
+				where: {
+					user_email: user_email,
+				}
+			});
 
 			if (candidate) {
-				res.status(409).json({error: `User with email ${user_email} already exists`});
+				return res.status(409).json({error: `User with email ${user_email} already exists`});
 			}
 
 			const user = {
 				user_name,
 				user_email,
 			}
-			await UsersModel.createUser(user);
+
+			await User.create(user);
 			return res.status(201).json({message: "User successfully created"});
 		} catch (err) {
 			res.status(500).send({error: err.message});
@@ -53,13 +58,17 @@ export default class UsersController {
 			id = Number(id);
 			const { user_name, user_email } = req.body;
 
-			const [candidate] = await UsersModel.getUserById(id);
+			const candidate = await User.findByPk(id);
 			if (!candidate) {
 				res.status(404).send({error: `User with id ${id} does not exist`});
 			}
 
 			if (user_email && candidate.user_email !== user_email) {
-				const [isEmailExists] = await UsersModel.getUserByEmail(user_email);
+				const isEmailExists = await User.findOne({
+					where: {
+						user_email: user_email,
+					}
+				});
 				if (isEmailExists) {
 					res.status(409).send({error: `User with email ${user_email} already exists`});
 				}
@@ -71,7 +80,11 @@ export default class UsersController {
 				user_email: user_email || candidate.user_email,
 			}
 
-			await UsersModel.updateUser(user, id);
+			await User.update(user, {
+				where: {
+					id: id
+				}
+			});
 			res.status(201).json({message: "User successfully updated"});
 		} catch (err) {
 			res.status(500).send({error: err.message});
@@ -83,12 +96,16 @@ export default class UsersController {
 			let { id } = req.params;
 			id = Number(id);
 
-			const [candidate] = await UsersModel.getUserById(id);
+			const candidate = await User.findByPk(id);
 			if (!candidate) {
 				res.status(404).send({error: `User with id ${id} does not exist`});
 			}
 
-			await UsersModel.deleteUser(id);
+			await User.destroy({
+				where: {
+					id: id
+				}
+			})
 			res.status(200).json({message: "User successfully deleted"});
 		} catch (err) {
 			res.status(500).send({error: err.message});
